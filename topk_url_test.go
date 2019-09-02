@@ -8,22 +8,46 @@ import (
 	"testing"
 )
 
+func TestCreateMinHeapFromFile(t *testing.T) {
+	filePath := TEST_PATH + "50.txt"
+	heap := CreateHeapFromFile(filePath)
+	if heap == nil {
+		t.Error("create heap error")
+	}
+	if heap.Length() != 90 {
+		t.Errorf("got %d want %d", heap.Length(), 90)
+	}
+}
+
+func TestMergeTwoHeap(t *testing.T) {
+	filePathA := TEST_PATH + "50.txt"
+	filePathB := TEST_PATH + "33.txt"
+	heapA := CreateHeapFromFile(filePathA)
+	heapB := CreateHeapFromFile(filePathB)
+	resultHeap := MergeTwoHeap(heapA, heapB)
+	if resultHeap.Length() != 100 {
+		t.Errorf("got %d want %d", resultHeap.Length(), TOP_NUM)
+	}
+}
+
 func TestMinHeap(t *testing.T) {
 	minHeap := utils.NewMinHeap()
 	minHeap.Insert(&utils.Url{Freq: 14, Addr: "baidu.com"})
 	minHeap.Insert(&utils.Url{Freq: 15, Addr: "douban.com"})
 	minHeap.Insert(&utils.Url{Freq: 17, Addr: "google.com"})
 	url, _ := minHeap.DeleteMin()
-	if !reflect.DeepEqual(url, &utils.Url{14, "baidu.com",}) {
+	if !reflect.DeepEqual(url, &utils.Url{14, "baidu.com"}) {
 		t.Errorf("got %s want %s", url.Addr, "baidu.com")
 
 	}
 
 	min, _ := minHeap.DeleteMin()
-	if !reflect.DeepEqual(minHeap.Min(), &utils.Url{17, "google.com",}) {
+	if !reflect.DeepEqual(minHeap.Min(), &utils.Url{17, "google.com"}) {
 		t.Errorf("got %s want %s", min.Addr, "baidu.com")
 	}
-
+	if minHeap.Length() != 1 {
+		t.Errorf("got %d want %d", minHeap.Length(), 1)
+	}
 }
 
 func RemovePartitionFile(path string, t *testing.T) {
@@ -44,7 +68,7 @@ func TestReadFile(t *testing.T) {
 	CreatePartitionFile(NUM_FILE)
 	defer RemoveTmpFile()
 	defer RemovePartitionFile(PARTITION_PATH, t)
-	err := ReadFile("tmp.txt")
+	err := ReadFile("tmp.txt", PartitionHandler)
 	if err != nil {
 		t.Errorf("Read File error %v", err)
 	}

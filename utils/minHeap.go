@@ -12,46 +12,44 @@ type MinHeap struct {
 func (heap *MinHeap) Insert(url *Url) {
 	// use floating operation to maintain heap order
 	heap.Element = append(heap.Element, url)
-	i := len(heap.Element)- 1
+	i := len(heap.Element) - 1
 	for ; (heap.Element[i/2]).Freq > url.Freq; i /= 2 {
 		heap.Element[i] = heap.Element[i/2]
 	}
+	heap.Element[i] = url
 }
 
-
-
+func (heap *MinHeap) Length() int {
+	return len(heap.Element) - 1
+}
 
 func (heap *MinHeap) Min() *Url {
-	if len(heap.Element)> 1 {
+	if len(heap.Element) > 1 {
 		return heap.Element[1]
 	}
 	return nil
 }
 
-func (heap *MinHeap) DeleteMin() (*Url,error){
-	if len(heap.Element) <= 1 {
+func (H *MinHeap) DeleteMin() (*Url, error) {
+	if len(H.Element) <= 1 {
 		return nil, fmt.Errorf("MinHeap is empty")
 	}
-	minElement := heap.Element[1]
-	lastElement := heap.Element[len(heap.Element)-1]
-	heap.Element = heap.Element[:len(heap.Element)-1]
-	heap.Element[1] = lastElement
-
-	for i := 1; 2*i<len(heap.Element);{
-		child := i* 2
-		if child<len(heap.Element)-1&&heap.Element[child+1].Freq < heap.Element[child].Freq {
+	minElement := H.Element[1]
+	lastElement := H.Element[len(H.Element)-1]
+	var i, child int
+	for i = 1; i*2 < len(H.Element); i = child {
+		child = i * 2
+		if child < len(H.Element)-1 && H.Element[child+1].Freq < H.Element[child].Freq {
 			child++
 		}
-		if heap.Element[i].Freq>heap.Element[child].Freq {
-			tmp := heap.Element[i]
-			heap.Element[i] = heap.Element[child]
-			heap.Element[child] = tmp
-			i = child
+		if lastElement.Freq > H.Element[child].Freq {
+			H.Element[i] = H.Element[child]
 		} else {
 			break
 		}
 	}
-
+	H.Element[i] = lastElement
+	H.Element = H.Element[:len(H.Element)-1]
 	return minElement, nil
 
 }
@@ -63,7 +61,6 @@ type Url struct {
 
 func NewMinHeap() *MinHeap {
 	first := &Url{math.MinInt64, "None"}
-	h := &MinHeap{Element: []*Url{first,},}
+	h := &MinHeap{Element: []*Url{first}}
 	return h
 }
-
