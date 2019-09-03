@@ -10,18 +10,18 @@ import (
 	"strconv"
 )
 
-var NUM_FILE = 100
-var TOP_NUM = 100
-var PARTITION_PATH = "./partition/"
-var TEST_PATH = "./test_partition/"
-var FILE_TYPE = ".txt"
-var DATA_SET = "Dataset.txt"
-var SIZE_BATCH = 3900000
+var NumFile = 100
+var TopNum = 100
+var PartitionPath = "./partition/"
+var TestPath = "./test_partition/"
+var FileType = ".txt"
+var DataSet = "Dataset.txt"
+var SizeBatch = 3900000
 
-// create a NUM_FILE number of files
+// create a NumFile number of files
 func CreatePartitionFile(num int) {
 	for i := 0; i < num; i++ {
-		partitionName := PARTITION_PATH + strconv.Itoa(i) + FILE_TYPE
+		partitionName := PartitionPath + strconv.Itoa(i) + FileType
 		f, err := os.OpenFile(partitionName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
 			fmt.Println(err.Error())
@@ -44,7 +44,7 @@ func ReadFile(path string, callback func([]string)) error {
 	memString := make([]string, 0)
 	for {
 		line, _, err := buf.ReadLine()
-		if count == SIZE_BATCH {
+		if count == SizeBatch {
 			callback(memString)
 			memString = make([]string, 0)
 			count = 0
@@ -68,7 +68,7 @@ func ReadFile(path string, callback func([]string)) error {
 
 // the callback function logic in readFile,
 // hashes the data read into memory
-// to the different location subfiles
+// to the different location sub files
 // through the Hash algorithm
 func PartitionHandler(strs []string) {
 	fileMap := make(map[string][]string)
@@ -77,7 +77,7 @@ func PartitionHandler(strs []string) {
 		if str == "" {
 			continue
 		}
-		partition := PARTITION_PATH + strconv.Itoa(int(utils.BKDRHash64(str))%NUM_FILE) + ".txt"
+		partition := PartitionPath + strconv.Itoa(int(utils.BKDRHash64(str))%NumFile) + ".txt"
 		_, exists := fileMap[partition]
 		if exists {
 			fileMap[partition] = append(fileMap[partition], str)
@@ -103,8 +103,8 @@ func PartitionHandler(strs []string) {
 // combine all heaps by means of a two-two merger
 func reduce() *utils.MinHeap {
 	heap := utils.NewMinHeap()
-	for i := 0; i < NUM_FILE; i++ {
-		NextHeap := CreateHeapFromFile(PARTITION_PATH + strconv.Itoa(i) + ".txt")
+	for i := 0; i < NumFile; i++ {
+		NextHeap := CreateHeapFromFile(PartitionPath + strconv.Itoa(i) + ".txt")
 		heap = MergeTwoHeap(heap, NextHeap)
 	}
 	return heap
@@ -116,7 +116,7 @@ func MergeTwoHeap(oldH, newH *utils.MinHeap) *utils.MinHeap {
 	}
 	for newH.Length() != 0 {
 		value, _ := newH.DeleteMin()
-		if oldH.Length() < TOP_NUM {
+		if oldH.Length() < TopNum {
 			oldH.Insert(value)
 			continue
 		}
@@ -129,7 +129,7 @@ func MergeTwoHeap(oldH, newH *utils.MinHeap) *utils.MinHeap {
 	return oldH
 }
 
-// create a heap from a subfile
+// create a heap from a sub file
 func CreateHeapFromFile(filePath string) *utils.MinHeap {
 	FreqMap := make(map[string]int64)
 
@@ -150,14 +150,14 @@ func CreateHeapFromFile(filePath string) *utils.MinHeap {
 
 	heap := utils.NewMinHeap()
 	for key, value := range FreqMap {
-		if heap.Length() < TOP_NUM {
-			heap.Insert(&utils.Url{value, key})
+		if heap.Length() < TopNum {
+			heap.Insert(&utils.Url{Freq: value, Addr: key})
 			continue
 		}
 		min := heap.Min()
 		if min.Freq < value {
 			_, _ = heap.DeleteMin()
-			heap.Insert(&utils.Url{value, key})
+			heap.Insert(&utils.Url{Freq: value, Addr: key})
 		}
 	}
 
@@ -177,7 +177,7 @@ func ShowTopKUrls(heap *utils.MinHeap) []*utils.Url {
 func RemoveFiles(path string) {
 	filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
 		if !f.IsDir() {
-			err := os.Remove(PARTITION_PATH + f.Name())
+			err := os.Remove(PartitionPath + f.Name())
 			return err
 		}
 		return nil
@@ -186,11 +186,11 @@ func RemoveFiles(path string) {
 }
 
 func main() {
-	CreatePartitionFile(NUM_FILE)
-	ReadFile(DATA_SET, PartitionHandler)
+	CreatePartitionFile(NumFile)
+	ReadFile(DataSet, PartitionHandler)
 	heap := reduce()
 	urls := ShowTopKUrls(heap)
-	defer RemoveFiles(PARTITION_PATH)
+	defer RemoveFiles(PartitionPath)
 	for _, url := range urls {
 		fmt.Printf("fre: %d url: %s \n", url.Freq, url.Addr)
 	}

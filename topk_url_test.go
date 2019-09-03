@@ -9,8 +9,8 @@ import (
 )
 
 func TestShowTopKUrls(t *testing.T) {
-	CreatePartitionFile(NUM_FILE)
-	ReadFile(DATA_SET, PartitionHandler)
+	CreatePartitionFile(NumFile)
+	ReadFile(DataSet, PartitionHandler)
 	heap := reduce()
 	urls := ShowTopKUrls(heap)
 	if len(urls) != 100 {
@@ -20,7 +20,7 @@ func TestShowTopKUrls(t *testing.T) {
 }
 
 func TestCreateMinHeapFromFile(t *testing.T) {
-	filePath := TEST_PATH + "50.txt"
+	filePath := TestPath + "50.txt"
 	heap := CreateHeapFromFile(filePath)
 	if heap == nil {
 		t.Error("create heap error")
@@ -31,13 +31,13 @@ func TestCreateMinHeapFromFile(t *testing.T) {
 }
 
 func TestMergeTwoHeap(t *testing.T) {
-	filePathA := TEST_PATH + "50.txt"
-	filePathB := TEST_PATH + "33.txt"
+	filePathA := TestPath + "50.txt"
+	filePathB := TestPath + "33.txt"
 	heapA := CreateHeapFromFile(filePathA)
 	heapB := CreateHeapFromFile(filePathB)
 	resultHeap := MergeTwoHeap(heapA, heapB)
 	if resultHeap.Length() != 100 {
-		t.Errorf("got %d want %d", resultHeap.Length(), TOP_NUM)
+		t.Errorf("got %d want %d", resultHeap.Length(), TopNum)
 	}
 }
 
@@ -64,7 +64,7 @@ func TestMinHeap(t *testing.T) {
 func RemovePartitionFile(path string, t *testing.T) {
 	err := filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
 		if !f.IsDir() {
-			err := os.Remove(PARTITION_PATH + f.Name())
+			err := os.Remove(PartitionPath + f.Name())
 			return err
 		}
 		return nil
@@ -75,10 +75,10 @@ func RemovePartitionFile(path string, t *testing.T) {
 }
 
 func TestReadFile(t *testing.T) {
-	RemoveTmpFile, _ := GenerateUrlFile("tmp.txt", NUM_FILE)
-	CreatePartitionFile(NUM_FILE)
+	RemoveTmpFile, _ := GenerateUrlFile("tmp.txt", NumFile)
+	CreatePartitionFile(NumFile)
 	defer RemoveTmpFile()
-	defer RemovePartitionFile(PARTITION_PATH, t)
+	defer RemovePartitionFile(PartitionPath, t)
 	err := ReadFile("tmp.txt", PartitionHandler)
 	if err != nil {
 		t.Errorf("Read File error %v", err)
@@ -87,8 +87,8 @@ func TestReadFile(t *testing.T) {
 }
 
 func TestPartitionHandler(t *testing.T) {
-	CreatePartitionFile(NUM_FILE)
-	defer RemovePartitionFile(PARTITION_PATH, t)
+	CreatePartitionFile(NumFile)
+	defer RemovePartitionFile(PartitionPath, t)
 	memString := make([]string, 0)
 	memString = append(memString, "https://xiantang.info/0")
 	memString = append(memString, "https://xiantang.info/1")
@@ -98,7 +98,7 @@ func TestPartitionHandler(t *testing.T) {
 	PartitionHandler(memString)
 	success := false
 
-	err := filepath.Walk(PARTITION_PATH, func(path string, f os.FileInfo, err error) error {
+	err := filepath.Walk(PartitionPath, func(path string, f os.FileInfo, err error) error {
 		if !f.IsDir() {
 			if f.Size() > 0 {
 				success = true
@@ -116,12 +116,12 @@ func TestPartitionHandler(t *testing.T) {
 }
 
 func TestCreatePartitionFile(t *testing.T) {
-	remove, _ := GenerateUrlFile("tmp", NUM_FILE)
-	CreatePartitionFile(NUM_FILE)
+	remove, _ := GenerateUrlFile("tmp", NumFile)
+	CreatePartitionFile(NumFile)
 	defer remove()
-	defer RemovePartitionFile(PARTITION_PATH, t)
+	defer RemovePartitionFile(PartitionPath, t)
 	count := 0
-	_ = filepath.Walk(PARTITION_PATH,
+	_ = filepath.Walk(PartitionPath,
 		func(path string, f os.FileInfo, err error) error {
 			if f == nil {
 				return err
@@ -132,7 +132,7 @@ func TestCreatePartitionFile(t *testing.T) {
 			count += 1
 			return nil
 		})
-	if count != NUM_FILE {
+	if count != NumFile {
 		t.Errorf("partition num error")
 	}
 
