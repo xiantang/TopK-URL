@@ -28,7 +28,3 @@ func GenerateUrlFile(str string, num int) (func(), error) {
 	return removeFile, nil
 
 }
-
-func main() {
-	GenerateUrlFile("./Dataset.txt", 1000)
-}

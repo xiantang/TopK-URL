@@ -8,6 +8,17 @@ import (
 	"testing"
 )
 
+func TestShowTopKUrls(t *testing.T) {
+	CreatePartitionFile(NUM_FILE)
+	ReadFile(DATA_SET, PartitionHandler)
+	heap := reduce()
+	urls := ShowTopKUrls(heap)
+	if len(urls) != 100 {
+		t.Errorf("got %d want %d", len(urls), 100)
+	}
+
+}
+
 func TestCreateMinHeapFromFile(t *testing.T) {
 	filePath := TEST_PATH + "50.txt"
 	heap := CreateHeapFromFile(filePath)

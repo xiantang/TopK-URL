@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -163,9 +164,35 @@ func CreateHeapFromFile(filePath string) *utils.MinHeap {
 	return heap
 }
 
+func ShowTopKUrls(heap *utils.MinHeap) []*utils.Url {
+	length := heap.Length()
+	urls := make([]*utils.Url, length)
+	for i := length - 1; i >= 0; i-- {
+		url, _ := heap.DeleteMin()
+		urls[i] = url
+	}
+	return urls
+}
+
+func RemoveFiles(path string) {
+	filepath.Walk(path, func(path string, f os.FileInfo, err error) error {
+		if !f.IsDir() {
+			err := os.Remove(PARTITION_PATH + f.Name())
+			return err
+		}
+		return nil
+	})
+
+}
+
 func main() {
 	CreatePartitionFile(NUM_FILE)
 	ReadFile(DATA_SET, PartitionHandler)
-	reduce()
+	heap := reduce()
+	urls := ShowTopKUrls(heap)
+	defer RemoveFiles(PARTITION_PATH)
+	for _, url := range urls {
+		fmt.Printf("fre: %d url: %s \n", url.Freq, url.Addr)
+	}
 
 }
