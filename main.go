@@ -18,7 +18,7 @@ var TestPath = "./test_partition/"
 var FileType = ".txt"
 var DataSet = "Dataset.txt"
 var SizeBatch = 3900000
-var TestHeapSizeBatch = 3
+var TestHeapSizeBatch = 100
 
 // create a NumFile number of files
 func CreatePartitionFile(num int) {
@@ -123,13 +123,13 @@ func MapPartitionHandler(strs []string) {
 }
 
 // combine all heaps by means of a two-two merger
-func reduce() *utils.MinHeap {
-	heap := utils.NewMinHeap()
-	for i := 0; i < NumFile; i++ {
-		NextHeap := CreateHeapFromFile(PartitionPath + strconv.Itoa(i) + ".txt")
-		heap = MergeTwoHeap(heap, NextHeap)
+func reduce(heaps []*utils.MinHeap) *utils.MinHeap {
+	oldHeap := utils.NewMinHeap()
+
+	for _, heap := range heaps {
+		oldHeap = MergeTwoHeap(oldHeap, heap)
 	}
-	return heap
+	return oldHeap
 }
 
 func MergeTwoHeap(oldH, newH *utils.MinHeap) *utils.MinHeap {
@@ -152,10 +152,12 @@ func MergeTwoHeap(oldH, newH *utils.MinHeap) *utils.MinHeap {
 }
 
 // create a heap from a sub file
-func CreateHeapFromFile(filePath string) *utils.MinHeap {
+func CreateHeapFromFile(filePath string) []*utils.MinHeap {
 	FreqMap := make(map[string]int64)
-
+	minHeaps := make([]*utils.MinHeap, 0)
 	addToMapFunc := func(keys []string) {
+		// init
+		FreqMap = make(map[string]int64)
 		for _, str := range keys {
 			if str == "" {
 				continue
@@ -164,23 +166,22 @@ func CreateHeapFromFile(filePath string) *utils.MinHeap {
 			num, _ := strconv.ParseInt(s[1], 10, 64)
 			FreqMap[s[0]] = num
 		}
+		heap := utils.NewMinHeap()
+		for key, value := range FreqMap {
+			if heap.Length() < TopNum {
+				heap.Insert(&utils.Url{Freq: value, Addr: key})
+				continue
+			}
+			min := heap.Min()
+			if min.Freq < value {
+				_, _ = heap.DeleteMin()
+				heap.Insert(&utils.Url{Freq: value, Addr: key})
+			}
+		}
+		minHeaps = append(minHeaps, heap)
 	}
 	ReadFile(filePath, TestHeapSizeBatch, addToMapFunc)
-
-	heap := utils.NewMinHeap()
-	for key, value := range FreqMap {
-		if heap.Length() < TopNum {
-			heap.Insert(&utils.Url{Freq: value, Addr: key})
-			continue
-		}
-		min := heap.Min()
-		if min.Freq < value {
-			_, _ = heap.DeleteMin()
-			heap.Insert(&utils.Url{Freq: value, Addr: key})
-		}
-	}
-
-	return heap
+	return minHeaps
 }
 
 func ShowTopKUrls(heap *utils.MinHeap) []*utils.Url {
@@ -204,10 +205,20 @@ func RemoveFiles(path string) {
 
 }
 
+func ReduceTo100Heap() []*utils.MinHeap {
+	heaps := make([]*utils.MinHeap, 0)
+	for i := 0; i < NumFile; i++ {
+		subHeaps := CreateHeapFromFile(PartitionPath + strconv.Itoa(i) + ".txt")
+		heaps = append(heaps, reduce(subHeaps))
+	}
+	return heaps
+}
+
 func main() {
 	CreatePartitionFile(NumFile)
 	ReadFile(DataSet, SizeBatch, MapPartitionHandler)
-	heap := reduce()
+	heaps := ReduceTo100Heap()
+	heap := reduce(heaps)
 	urls := ShowTopKUrls(heap)
 	defer RemoveFiles(PartitionPath)
 	for _, url := range urls {

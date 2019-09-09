@@ -11,7 +11,8 @@ import (
 func TestShowTopKUrls(t *testing.T) {
 	CreatePartitionFile(NumFile)
 	ReadFile(DataSet, SizeBatch, MapPartitionHandler)
-	heap := reduce()
+	heaps := ReduceTo100Heap()
+	heap := reduce(heaps)
 	urls := ShowTopKUrls(heap)
 	if len(urls) != 100 {
 		t.Errorf("got %d want %d", len(urls), 100)
@@ -19,14 +20,32 @@ func TestShowTopKUrls(t *testing.T) {
 
 }
 
-func TestCreateMinHeapFromFile(t *testing.T) {
-	filePath := TestPath + "50.txt"
-	heap := CreateHeapFromFile(filePath)
-	if heap == nil {
-		t.Error("create heap error")
+func TestReduceTo100Heap(t *testing.T) {
+	CreatePartitionFile(NumFile)
+	ReadFile(DataSet, SizeBatch, MapPartitionHandler)
+	heaps := ReduceTo100Heap()
+	heap := reduce(heaps)
+	if heap.Length() != 100 {
+		t.Errorf("got %d want %d", heap.Length(), 100)
 	}
+
+}
+
+func TestReduce(t *testing.T) {
+	filePath := TestPath + "50.txt"
+	heaps := CreateHeapFromFile(filePath)
+	heap := reduce(heaps)
 	if heap.Length() != 10 {
 		t.Errorf("got %d want %d", heap.Length(), 10)
+	}
+
+}
+
+func TestCreateMinHeapsFromFile(t *testing.T) {
+	filePath := TestPath + "50.txt"
+	heaps := CreateHeapFromFile(filePath)
+	if heaps == nil {
+		t.Error("create heap error")
 	}
 }
 
@@ -34,8 +53,11 @@ func TestMergeTwoHeap(t *testing.T) {
 	filePathA := TestPath + "50.txt"
 	filePathB := TestPath + "33.txt"
 	heapA := CreateHeapFromFile(filePathA)
+
 	heapB := CreateHeapFromFile(filePathB)
-	resultHeap := MergeTwoHeap(heapA, heapB)
+	a := reduce(heapA)
+	b := reduce(heapB)
+	resultHeap := MergeTwoHeap(a, b)
 	if resultHeap.Length() != 16 {
 		t.Errorf("got %d want %d", resultHeap.Length(), TopNum)
 	}
