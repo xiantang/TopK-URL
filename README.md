@@ -16,20 +16,28 @@ TopK-URL
 │  generate_test.go
 │  main.go
 │  topk_url_test.go
+│  .gitignore
+│  README.md
 │
 │
 ├─partition
+│
+│
 ├─test_partition
 │      33.txt
 │      50.txt
 │
 └─utils
+       bkdrHash.go
+       minHeap.go
 ```
 
 ## Implement
 
-* We use stream data to process very large files and use the BKDRHash function to assign different URLs to different files. But make sure the same URL in the huge file needs to appear in the same file.
+* we use stream data to process very large files and use the BKDRHash function to assign different URLs to different files. But make sure the same URL in the huge file needs to appear in the same file.
+* each file only records the number of times the url appears, reducing the number of io times.
 * we calculate a Top100 min-heap for each file.
+* we segment reading the contents of the part file to build the smallest heap of the file, preventing memory overflow
 * we merge all the min-heap into one min-heap.
 
 ## Quickstart
