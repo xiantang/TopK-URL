@@ -102,6 +102,7 @@ func PartitionHandler(strs []string) {
 }
 
 func MapPartitionHandler(strs []string) {
+
 	fileMap := make(map[string]int64)
 	for _, str := range strs {
 		if str == "" {
