@@ -6,7 +6,7 @@ Assuming the file size is 100G, the URL file used by this project is taken as an
 
 ## File structure
 
-analyze a 100GB link using Min Heap + Hash to get a Demo with a Top100 link
+analyze 100GB links using Min Heap + Hash to get Top100 links
 
 ```tree
 TopK-URL
