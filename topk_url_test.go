@@ -86,18 +86,23 @@ func TestReadFile(t *testing.T) {
 
 }
 
-func TestPartitionHandler(t *testing.T) {
+func TestMapPartitionHandler(t *testing.T) {
 	CreatePartitionFile(NumFile)
-	defer RemovePartitionFile(PartitionPath, t)
+	//defer RemovePartitionFile(PartitionPath, t)
 	memString := make([]string, 0)
 	memString = append(memString, "https://xiantang.info/0")
+	memString = append(memString, "https://xiantang.info/0")
+	memString = append(memString, "https://xiantang.info/0")
+	memString = append(memString, "https://xiantang.info/0")
 	memString = append(memString, "https://xiantang.info/1")
-	memString = append(memString, "https://xiantang.info/4")
-	memString = append(memString, "https://xiantang.info/2")
+	memString = append(memString, "https://xiantang.info/1")
 	CreatePartitionFile(100)
-	PartitionHandler(memString)
-	success := false
+	MapPartitionHandler(memString)
+	assertFileNotNull(t)
+}
 
+func assertFileNotNull(t *testing.T) {
+	success := false
 	err := filepath.Walk(PartitionPath, func(path string, f os.FileInfo, err error) error {
 		if !f.IsDir() {
 			if f.Size() > 0 {
@@ -112,6 +117,20 @@ func TestPartitionHandler(t *testing.T) {
 	if !success {
 		t.Fatalf("Read File error %v", err)
 	}
+
+}
+
+func TestPartitionHandler(t *testing.T) {
+	CreatePartitionFile(NumFile)
+	defer RemovePartitionFile(PartitionPath, t)
+	memString := make([]string, 0)
+	memString = append(memString, "https://xiantang.info/0")
+	memString = append(memString, "https://xiantang.info/1")
+	memString = append(memString, "https://xiantang.info/4")
+	memString = append(memString, "https://xiantang.info/2")
+	CreatePartitionFile(100)
+	PartitionHandler(memString)
+	assertFileNotNull(t)
 
 }
 

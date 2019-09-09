@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 var NumFile = 100
@@ -100,6 +101,57 @@ func PartitionHandler(strs []string) {
 
 }
 
+func MapPartitionHandler(strs []string) {
+	fileMap := make(map[string]int64)
+	for _, str := range strs {
+		if str == "" {
+			continue
+		}
+		_, exists := fileMap[str]
+		if exists {
+			fileMap[str] += 1
+		} else {
+			fileMap[str] = 1
+		}
+	}
+
+	for url, num := range fileMap {
+		path := PartitionPath + strconv.Itoa(int(utils.BKDRHash64(url))%NumFile) + ".txt"
+		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		partitionMap := make(map[string]int64)
+		callback := func(strs []string) {
+			for _, str := range strs {
+				if str == "" {
+					continue
+				}
+				s := strings.Split(str, "  ")
+				partitionUrl := s[0]
+				partitionNum, _ := strconv.ParseInt(s[1], 10, 64)
+				partitionMap[partitionUrl] = partitionNum
+			}
+		}
+		ReadFile(path, callback)
+		value, exists := partitionMap[url]
+		if exists {
+			partitionMap[url] = value + num
+		} else {
+			partitionMap[url] = num
+		}
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+		if err != nil {
+			fmt.Println("file create failed. err: " + err.Error())
+		} else {
+			f.Seek(0, 0)
+			result := ""
+			for url, num := range partitionMap {
+				result += url + "  " + strconv.FormatInt(num, 10) + "\n"
+			}
+			f.Write([]byte(result))
+			defer f.Close()
+		}
+	}
+}
+
 // combine all heaps by means of a two-two merger
 func reduce() *utils.MinHeap {
 	heap := utils.NewMinHeap()
@@ -187,12 +239,14 @@ func RemoveFiles(path string) {
 
 func main() {
 	CreatePartitionFile(NumFile)
+	//ReadFile(DataSet, MapPartitionHandler)
+
 	ReadFile(DataSet, PartitionHandler)
-	heap := reduce()
-	urls := ShowTopKUrls(heap)
-	defer RemoveFiles(PartitionPath)
-	for _, url := range urls {
-		fmt.Printf("fre: %d url: %s \n", url.Freq, url.Addr)
-	}
+	//heap := reduce()
+	//urls := ShowTopKUrls(heap)
+	//defer RemoveFiles(PartitionPath)
+	//for _, url := range urls {
+	//	fmt.Printf("fre: %d url: %s \n", url.Freq, url.Addr)
+	//}
 
 }
