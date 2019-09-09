@@ -10,7 +10,7 @@ import (
 
 func TestShowTopKUrls(t *testing.T) {
 	CreatePartitionFile(NumFile)
-	ReadFile(DataSet, PartitionHandler)
+	ReadFile(DataSet, SizeBatch, MapPartitionHandler)
 	heap := reduce()
 	urls := ShowTopKUrls(heap)
 	if len(urls) != 100 {
@@ -25,8 +25,8 @@ func TestCreateMinHeapFromFile(t *testing.T) {
 	if heap == nil {
 		t.Error("create heap error")
 	}
-	if heap.Length() != 90 {
-		t.Errorf("got %d want %d", heap.Length(), 90)
+	if heap.Length() != 10 {
+		t.Errorf("got %d want %d", heap.Length(), 10)
 	}
 }
 
@@ -36,7 +36,7 @@ func TestMergeTwoHeap(t *testing.T) {
 	heapA := CreateHeapFromFile(filePathA)
 	heapB := CreateHeapFromFile(filePathB)
 	resultHeap := MergeTwoHeap(heapA, heapB)
-	if resultHeap.Length() != 100 {
+	if resultHeap.Length() != 16 {
 		t.Errorf("got %d want %d", resultHeap.Length(), TopNum)
 	}
 }
@@ -79,7 +79,7 @@ func TestReadFile(t *testing.T) {
 	CreatePartitionFile(NumFile)
 	defer RemoveTmpFile()
 	defer RemovePartitionFile(PartitionPath, t)
-	err := ReadFile("tmp.txt", PartitionHandler)
+	err := ReadFile("tmp.txt", SizeBatch, MapPartitionHandler)
 	if err != nil {
 		t.Errorf("Read File error %v", err)
 	}
@@ -117,20 +117,6 @@ func assertFileNotNull(t *testing.T) {
 	if !success {
 		t.Fatalf("Read File error %v", err)
 	}
-
-}
-
-func TestPartitionHandler(t *testing.T) {
-	CreatePartitionFile(NumFile)
-	defer RemovePartitionFile(PartitionPath, t)
-	memString := make([]string, 0)
-	memString = append(memString, "https://xiantang.info/0")
-	memString = append(memString, "https://xiantang.info/1")
-	memString = append(memString, "https://xiantang.info/4")
-	memString = append(memString, "https://xiantang.info/2")
-	CreatePartitionFile(100)
-	PartitionHandler(memString)
-	assertFileNotNull(t)
 
 }
 

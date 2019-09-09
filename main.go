@@ -18,6 +18,7 @@ var TestPath = "./test_partition/"
 var FileType = ".txt"
 var DataSet = "Dataset.txt"
 var SizeBatch = 3900000
+var TestHeapSizeBatch = 3
 
 // create a NumFile number of files
 func CreatePartitionFile(num int) {
@@ -29,12 +30,11 @@ func CreatePartitionFile(num int) {
 		}
 		f.Close()
 	}
-
 }
 
 // read into memory in a certain number of rows
 // pass the callback function to perform operations
-func ReadFile(path string, callback func([]string)) error {
+func ReadFile(path string, sizeBatch int, callback func([]string)) error {
 	f, err := os.Open(path)
 	defer f.Close()
 	if err != nil {
@@ -45,7 +45,7 @@ func ReadFile(path string, callback func([]string)) error {
 	memString := make([]string, 0)
 	for {
 		line, _, err := buf.ReadLine()
-		if count == SizeBatch {
+		if count == sizeBatch {
 			callback(memString)
 			memString = make([]string, 0)
 			count = 0
@@ -71,38 +71,7 @@ func ReadFile(path string, callback func([]string)) error {
 // hashes the data read into memory
 // to the different location sub files
 // through the Hash algorithm
-func PartitionHandler(strs []string) {
-	fileMap := make(map[string][]string)
-
-	for _, str := range strs {
-		if str == "" {
-			continue
-		}
-		partition := PartitionPath + strconv.Itoa(int(utils.BKDRHash64(str))%NumFile) + ".txt"
-		_, exists := fileMap[partition]
-		if exists {
-			fileMap[partition] = append(fileMap[partition], str)
-		} else {
-			fileMap[partition] = []string{str}
-		}
-	}
-
-	for path, values := range fileMap {
-		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-		if err != nil {
-			f.Close()
-		} else {
-			for _, v := range values {
-				_, err = f.Write([]byte(v + "\n"))
-			}
-			f.Close()
-		}
-	}
-
-}
-
 func MapPartitionHandler(strs []string) {
-
 	fileMap := make(map[string]int64)
 	for _, str := range strs {
 		if str == "" {
@@ -117,8 +86,8 @@ func MapPartitionHandler(strs []string) {
 	}
 
 	for url, num := range fileMap {
-		path := PartitionPath + strconv.Itoa(int(utils.BKDRHash64(url))%NumFile) + ".txt"
-		f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+		pathPre := PartitionPath + strconv.Itoa(int(utils.BKDRHash64(url))%NumFile)
+		path := pathPre + ".txt"
 		partitionMap := make(map[string]int64)
 		callback := func(strs []string) {
 			for _, str := range strs {
@@ -131,7 +100,7 @@ func MapPartitionHandler(strs []string) {
 				partitionMap[partitionUrl] = partitionNum
 			}
 		}
-		ReadFile(path, callback)
+		ReadFile(path, SizeBatch, callback)
 		value, exists := partitionMap[url]
 		if exists {
 			partitionMap[url] = value + num
@@ -187,19 +156,16 @@ func CreateHeapFromFile(filePath string) *utils.MinHeap {
 	FreqMap := make(map[string]int64)
 
 	addToMapFunc := func(keys []string) {
-		for _, key := range keys {
-			_, exists := FreqMap[key]
-			if exists {
-				FreqMap[key]++
-			} else {
-				if key != "" {
-					FreqMap[key] = 1
-				}
+		for _, str := range keys {
+			if str == "" {
+				continue
 			}
+			s := strings.Split(str, "  ")
+			num, _ := strconv.ParseInt(s[1], 10, 64)
+			FreqMap[s[0]] = num
 		}
-
 	}
-	ReadFile(filePath, addToMapFunc)
+	ReadFile(filePath, TestHeapSizeBatch, addToMapFunc)
 
 	heap := utils.NewMinHeap()
 	for key, value := range FreqMap {
@@ -240,14 +206,11 @@ func RemoveFiles(path string) {
 
 func main() {
 	CreatePartitionFile(NumFile)
-	//ReadFile(DataSet, MapPartitionHandler)
-
-	ReadFile(DataSet, PartitionHandler)
-	//heap := reduce()
-	//urls := ShowTopKUrls(heap)
-	//defer RemoveFiles(PartitionPath)
-	//for _, url := range urls {
-	//	fmt.Printf("fre: %d url: %s \n", url.Freq, url.Addr)
-	//}
-
+	ReadFile(DataSet, SizeBatch, MapPartitionHandler)
+	heap := reduce()
+	urls := ShowTopKUrls(heap)
+	defer RemoveFiles(PartitionPath)
+	for _, url := range urls {
+		fmt.Printf("fre: %d url: %s \n", url.Freq, url.Addr)
+	}
 }
