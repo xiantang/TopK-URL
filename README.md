@@ -48,27 +48,33 @@ TopK-URL
 
    ```bash
    E:\Project\TopK-URL>go test -v
-   === RUN   TestBKDRHash
-   --- PASS: TestBKDRHash (0.00s)
-       bkdrHash_test.go:10: Pass
-   === RUN   TestGenerateUrl
-   --- PASS: TestGenerateUrl (0.01s)
-   === RUN   TestShowTopKUrls
-   --- PASS: TestShowTopKUrls (3.00s)
-   === RUN   TestCreateMinHeapFromFile
-   --- PASS: TestCreateMinHeapFromFile (0.10s)
-   === RUN   TestMergeTwoHeap
-   --- PASS: TestMergeTwoHeap (0.21s)
-   === RUN   TestMinHeap
-   --- PASS: TestMinHeap (0.00s)
-   === RUN   TestReadFile
-   --- PASS: TestReadFile (0.14s)
-   === RUN   TestPartitionHandler
-   --- PASS: TestPartitionHandler (0.10s)
-   === RUN   TestCreatePartitionFile
-   --- PASS: TestCreatePartitionFile (0.10s)
-   PASS
-   ok      _/E_/Project/TopK-URL   3.912s
+    === RUN   TestBKDRHash
+    --- PASS: TestBKDRHash (0.00s)
+        bkdrHash_test.go:10: Pass
+    === RUN   TestGenerateUrl
+    --- PASS: TestGenerateUrl (0.01s)
+    === RUN   TestShowTopKUrls
+    --- PASS: TestShowTopKUrls (0.97s)
+    === RUN   TestReduceTo100Heap
+    --- PASS: TestReduceTo100Heap (0.93s)
+    === RUN   TestReduce
+    --- PASS: TestReduce (0.00s)
+    === RUN   TestCreateMinHeapsFromFile
+    --- PASS: TestCreateMinHeapsFromFile (0.00s)
+    === RUN   TestMergeTwoHeap
+    --- PASS: TestMergeTwoHeap (0.00s)
+    === RUN   TestMinHeap
+    --- PASS: TestMinHeap (0.00s)
+    === RUN   TestReadFile
+    --- PASS: TestReadFile (0.15s)
+    === RUN   TestMapPartitionHandler
+    --- PASS: TestMapPartitionHandler (0.07s)
+    === RUN   TestCreatePartitionFile
+    --- PASS: TestCreatePartitionFile (0.08s)
+    PASS
+    ok      _/E_/Project/TopK-URL   2.718s
+
+
    ```
 
    
@@ -99,7 +105,7 @@ TopK-URL
 ```
 E:\Project\TopK-URL>go test -cover
 PASS
-coverage: 76.8% of statements
-ok      _/E_/Project/TopK-URL   4.185s
+coverage: 80.4% of statements
+ok      _/E_/Project/TopK-URL  2.705s 
 ```
 
