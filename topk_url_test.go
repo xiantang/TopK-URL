@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"testing"
 )
 
@@ -110,21 +111,17 @@ func TestReadFile(t *testing.T) {
 
 func TestMapPartitionHandler(t *testing.T) {
 	CreatePartitionFile(NumFile)
-	//defer RemovePartitionFile(PartitionPath, t)
+	defer RemovePartitionFile(PartitionPath, t)
 	memString := make([]string, 0)
-	memString = append(memString, "https://xiantang.info/0")
-	memString = append(memString, "https://xiantang.info/0")
-	memString = append(memString, "https://xiantang.info/0")
-	memString = append(memString, "https://xiantang.info/0")
-	memString = append(memString, "https://xiantang.info/1")
-	memString = append(memString, "https://xiantang.info/1")
-	CreatePartitionFile(100)
+	for i := 1; i < 200; i++ {
+		memString = append(memString, "https://Dataset.txt/"+strconv.Itoa(i))
+	}
 	MapPartitionHandler(memString)
-	defer RemoveFiles(PartitionPath)
 	assertFileNotNull(t)
 }
 
 func assertFileNotNull(t *testing.T) {
+	CreatePartitionFile(NumFile)
 	success := false
 	err := filepath.Walk(PartitionPath, func(path string, f os.FileInfo, err error) error {
 		if !f.IsDir() {

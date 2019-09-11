@@ -1,10 +1,25 @@
 package utils
 
-import "container/list"
+import (
+	"container/list"
+)
 
 func New(maxEntries int) *Cache {
 	return &Cache{
 		MaxEntries: maxEntries,
+
+		// 链表
+		linkedList: list.New(),
+
+		hashMap: make(map[interface{}]*list.Element),
+	}
+}
+
+func NewWithCallback(maxEntries int, callback func(key Key, value interface{})) *Cache {
+	return &Cache{
+		MaxEntries: maxEntries,
+
+		OnEvicted: callback,
 		// 链表
 		linkedList: list.New(),
 
@@ -56,10 +71,13 @@ func (c *Cache) RemoveLast() {
 }
 
 // 删除指定元素
-func (c Cache) RemoveElement(element *list.Element) {
+func (c *Cache) RemoveElement(element *list.Element) {
 	c.linkedList.Remove(element)
 	kv := element.Value.(*entry)
 	delete(c.hashMap, kv.key)
+	if c.OnEvicted != nil {
+		c.OnEvicted(kv.key, kv.value)
+	}
 }
 
 func (c *Cache) Len() int {

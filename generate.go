@@ -17,7 +17,7 @@ func GenerateUrlFile(str string, num int) (func(), error) {
 		count := 0
 		for count < num {
 			for i := count; i >= 0; i-- {
-				_, err = f.Write([]byte("https://xiantang.info/" + strconv.Itoa(count) + "\n"))
+				_, err = f.Write([]byte("https://Dataset.txt/" + strconv.Itoa(count) + "\n"))
 				if err != nil {
 					return removeFile, err
 				}

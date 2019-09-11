@@ -19,6 +19,41 @@ var FileType = ".txt"
 var DataSet = "Dataset.txt"
 var SizeBatch = 10000
 var TestHeapSizeBatch = 100
+var LruSize = 100
+var lru = utils.NewWithCallback(LruSize, callback)
+
+func callback(key utils.Key, num interface{}) {
+	url := key.(string)
+	pathPre := PartitionPath + strconv.Itoa(int(utils.BKDRHash64(url))%NumFile)
+	path := pathPre + ".txt"
+	partitionMap := make(map[string]int64)
+	callback := func(strs []string) {
+		for _, str := range strs {
+			if str == "" {
+				break
+			}
+			s := strings.Split(str, "  ")
+			partitionUrl := s[0]
+			partitionNum, _ := strconv.ParseInt(s[1], 10, 64)
+			partitionMap[partitionUrl] = partitionNum
+		}
+	}
+	num64 := num.(int64)
+
+	// 分段读取file
+	// 并且调用回调函数
+	// 将分段的数据读取出来
+	ReadFile(path, SizeBatch, callback)
+	// 将文件中和内存中的map 合并
+	value, exists := partitionMap[url]
+	if exists {
+		partitionMap[url] = value + num64
+	} else {
+		partitionMap[url] = num64
+	}
+
+	writeBackToFile(path, partitionMap)
+}
 
 // 没有预分配内存
 // 没有cache LRU
@@ -86,34 +121,11 @@ func MapPartitionHandler(strs []string) {
 
 	// 遍历这个 inMemoryMap
 	for url, num := range inMemoryMap {
-		// 找到对应 url 的文件位置
-		pathPre := PartitionPath + strconv.Itoa(int(utils.BKDRHash64(url))%NumFile)
-		path := pathPre + ".txt"
-		partitionMap := make(map[string]int64)
-		callback := func(strs []string) {
-			for _, str := range strs {
-				if str == "" {
-					break
-				}
-				s := strings.Split(str, "  ")
-				partitionUrl := s[0]
-				partitionNum, _ := strconv.ParseInt(s[1], 10, 64)
-				partitionMap[partitionUrl] = partitionNum
-			}
-		}
-		// 分段读取file
-		// 并且调用回调函数
-		// 将分段的数据读取出来
-		ReadFile(path, SizeBatch, callback)
-		value, exists := partitionMap[url]
-		// 将文件中和内存中的map 合并
-		if exists {
-			partitionMap[url] = value + num
+		if value, ok := lru.Get(url); ok {
+			lru.Set(url, num+value.(int64))
 		} else {
-			partitionMap[url] = num
+			lru.Set(url, num)
 		}
-		// 写回文件
-		writeBackToFile(path, partitionMap)
 	}
 }
 
@@ -241,9 +253,16 @@ func ReduceTo100Heap() []*utils.MinHeap {
 	return heaps
 }
 
+func WriteBackToFile() {
+	for lru.Len() > 0 {
+		lru.RemoveLast()
+	}
+}
+
 func main() {
 	CreatePartitionFile(NumFile)
 	ReadFile(DataSet, SizeBatch, MapPartitionHandler)
+	WriteBackToFile()
 	heaps := ReduceTo100Heap()
 	heap := reduce(heaps)
 	urls := ShowTopKUrls(heap)
@@ -251,4 +270,5 @@ func main() {
 	for _, url := range urls {
 		fmt.Printf("fre: %d url: %s \n", url.Freq, url.Addr)
 	}
+
 }
