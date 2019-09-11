@@ -17,10 +17,16 @@ var PartitionPath = "./partition/"
 var TestPath = "./test_partition/"
 var FileType = ".txt"
 var DataSet = "Dataset.txt"
-var SizeBatch = 3900000
+var SizeBatch = 10000
 var TestHeapSizeBatch = 100
 
+
+// 没有预分配内存
+// 没有cache LRU
+// 单线程 串行 IO 和 计算没有分离
 // create a NumFile number of files
+
+// 创建 partitionFile 100个
 func CreatePartitionFile(num int) {
 	for i := 0; i < num; i++ {
 		partitionName := PartitionPath + strconv.Itoa(i) + FileType
@@ -34,7 +40,11 @@ func CreatePartitionFile(num int) {
 
 // read into memory in a certain number of rows
 // pass the callback function to perform operations
+
+// 分段读取其中的内容
+// 将内容变成转换成[]string
 func ReadFile(path string, sizeBatch int, callback func([]string)) error {
+	// TODO do refactor
 	f, err := os.Open(path)
 	defer f.Close()
 	if err != nil {
@@ -42,21 +52,22 @@ func ReadFile(path string, sizeBatch int, callback func([]string)) error {
 	}
 	buf := bufio.NewReader(f)
 	count := 0
-	memString := make([]string, 0)
+	// set length
+	memString := make([]string, sizeBatch)
 	for {
 		line, _, err := buf.ReadLine()
+		// 如果到达sizeBath的长度
+		// 就调用回调方法
 		if count == sizeBatch {
 			callback(memString)
-			memString = make([]string, 0)
+			memString = make([]string, sizeBatch)
 			count = 0
 		}
-		memString = append(memString, string(line))
-
+		memString[count] = string(line)
 		if err != nil {
-
 			if err == io.EOF {
 				callback(memString)
-				memString = make([]string, 0)
+				memString = make([]string, sizeBatch)
 				count = 0
 				return nil
 			}
@@ -72,7 +83,8 @@ func ReadFile(path string, sizeBatch int, callback func([]string)) error {
 // to the different location sub files
 // through the Hash algorithm
 func MapPartitionHandler(strs []string) {
-	fileMap := make(map[string]int64)
+	// 将这些分段读取的数据存入map
+	fileMap := make(map[string]int64,SizeBatch)
 	for _, str := range strs {
 		if str == "" {
 			continue
@@ -92,7 +104,7 @@ func MapPartitionHandler(strs []string) {
 		callback := func(strs []string) {
 			for _, str := range strs {
 				if str == "" {
-					continue
+					break
 				}
 				s := strings.Split(str, "  ")
 				partitionUrl := s[0]
@@ -206,7 +218,7 @@ func RemoveFiles(path string) {
 }
 
 func ReduceTo100Heap() []*utils.MinHeap {
-	heaps := make([]*utils.MinHeap, 0)
+	heaps := make([]*utils.MinHeap, 100)
 	for i := 0; i < NumFile; i++ {
 		subHeaps := CreateHeapFromFile(PartitionPath + strconv.Itoa(i) + ".txt")
 		heaps = append(heaps, reduce(subHeaps))

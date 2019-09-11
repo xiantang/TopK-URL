@@ -120,6 +120,7 @@ func TestMapPartitionHandler(t *testing.T) {
 	memString = append(memString, "https://xiantang.info/1")
 	CreatePartitionFile(100)
 	MapPartitionHandler(memString)
+	defer RemoveFiles(PartitionPath)
 	assertFileNotNull(t)
 }
 
