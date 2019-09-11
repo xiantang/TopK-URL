@@ -20,7 +20,6 @@ var DataSet = "Dataset.txt"
 var SizeBatch = 10000
 var TestHeapSizeBatch = 100
 
-
 // 没有预分配内存
 // 没有cache LRU
 // 单线程 串行 IO 和 计算没有分离
@@ -44,7 +43,6 @@ func CreatePartitionFile(num int) {
 // 分段读取其中的内容
 // 将内容变成转换成[]string
 func ReadFile(path string, sizeBatch int, callback func([]string)) error {
-	// TODO do refactor
 	f, err := os.Open(path)
 	defer f.Close()
 	if err != nil {
@@ -84,20 +82,11 @@ func ReadFile(path string, sizeBatch int, callback func([]string)) error {
 // through the Hash algorithm
 func MapPartitionHandler(strs []string) {
 	// 将这些分段读取的数据存入map
-	fileMap := make(map[string]int64,SizeBatch)
-	for _, str := range strs {
-		if str == "" {
-			continue
-		}
-		_, exists := fileMap[str]
-		if exists {
-			fileMap[str] += 1
-		} else {
-			fileMap[str] = 1
-		}
-	}
+	inMemoryMap := readMapFromSlice(strs)
 
-	for url, num := range fileMap {
+	// 遍历这个 inMemoryMap
+	for url, num := range inMemoryMap {
+		// 找到对应 url 的文件位置
 		pathPre := PartitionPath + strconv.Itoa(int(utils.BKDRHash64(url))%NumFile)
 		path := pathPre + ".txt"
 		partitionMap := make(map[string]int64)
@@ -112,26 +101,52 @@ func MapPartitionHandler(strs []string) {
 				partitionMap[partitionUrl] = partitionNum
 			}
 		}
+		// 分段读取file
+		// 并且调用回调函数
+		// 将分段的数据读取出来
 		ReadFile(path, SizeBatch, callback)
 		value, exists := partitionMap[url]
+		// 将文件中和内存中的map 合并
 		if exists {
 			partitionMap[url] = value + num
 		} else {
 			partitionMap[url] = num
 		}
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Println("file create failed. err: " + err.Error())
+		// 写回文件
+		writeBackToFile(path, partitionMap)
+	}
+}
+
+func writeBackToFile(path string, partitionMap map[string]int64) {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Println("file create failed. err: " + err.Error())
+	} else {
+		f.Seek(0, 0)
+		result := ""
+		for url, num := range partitionMap {
+			result += url + "  " + strconv.FormatInt(num, 10) + "\n"
+		}
+		f.Write([]byte(result))
+		defer f.Close()
+	}
+
+}
+
+func readMapFromSlice(strs []string) map[string]int64 {
+	fileMap := make(map[string]int64)
+	for _, str := range strs {
+		if str == "" {
+			break
+		}
+		_, exists := fileMap[str]
+		if exists {
+			fileMap[str] += 1
 		} else {
-			f.Seek(0, 0)
-			result := ""
-			for url, num := range partitionMap {
-				result += url + "  " + strconv.FormatInt(num, 10) + "\n"
-			}
-			f.Write([]byte(result))
-			defer f.Close()
+			fileMap[str] = 1
 		}
 	}
+	return fileMap
 }
 
 // combine all heaps by means of a two-two merger
